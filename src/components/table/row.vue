@@ -1,5 +1,5 @@
 <template>
-    <tr class="row" v-if="show">
+    <tr class="table-row" v-if="show">
         <td v-for="column in columns">
             {{ entity[column] }}
         </td>
@@ -13,7 +13,7 @@
 </template>
 <script>
 export default {
-    name: 'row',
+    name: 'table-row',
     data: function() {
         return {
             show: true
@@ -42,30 +42,38 @@ export default {
         }
     },
     methods: {
-        checkFilters() {
-            let _this = this;
-            let _filters = Object.keys(this.filters);
+        checkRowFilters() {
 
+        },
+        checkFilters() {
+            let _filters = Object.keys(this.filters);
             let count = 0;
             let total = 0;
             let filtered = false;
-            let hide = false;
 
-            Object.keys(this.filters).forEach((key) => {
-                if (_this.filters[key] === '') {
-                    hide = true;
+            _filters.forEach((attribute) => {
+                let filter = this.filters[attribute];
+                let entityValue = this.entity[attribute];
+                if (filter === '') {
                     return true;
                 }
 
-                total += 1;
+                if (filter.length === 0) {
+                    return true;
+                }
+
+                total++;
                 filtered = true;
-                if (_this.filters[key] === _this.entity[key]) {
+
+                let found = filter.find(function(filterValue) {
+                    return filterValue === entityValue;
+                });
+
+                if (typeof found !== "undefined") {
                     count++;
-                    console.log(key, 'match', count);
+                    console.log(attribute, 'match', count);
                     return true;
                 }
-
-                hide = true;
             });
 
             if (filtered === false) {
@@ -80,6 +88,26 @@ export default {
 
             this.show = false;
             return true;
+
+            /*
+            Object.keys(this.filters).forEach((key) => {
+                let filter = _this.filters[key];
+                console.log(filter);
+                if (key === '') {
+                    return true;
+                }
+
+                Object.keys(filter).forEach((key) => {
+                    total += 1;
+                    filtered = true;
+                    if (filter[key] === _this.entity[key]) {
+                        count++;
+                        console.log(value, 'match', count);
+                        return truekey
+                    }
+                });
+            });
+            */
         }
     },
 }
