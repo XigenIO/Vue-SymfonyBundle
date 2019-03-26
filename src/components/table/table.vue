@@ -1,17 +1,30 @@
 <template>
     <div class="symfonyTable table-container">
-        <p>{{ visableEntities }} of {{ totalEntities }} visible</p>
+        <!--div class="sort-reset-button">
+            <button type="button" @click='clear()' class="btn btn-outline-danger btn-sm js-ignore-click">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg feather feather-minus-square js-ignore-click"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="8" y1="12" x2="16" y2="12"></line></svg>
+            </button>
+        </div-->
+
         <table class="table">
             <thead>
                 <tr>
-                    <th v-for="column in columns" scope="col" class="table-col-title">
-                        <symfonyTable-filter v-bind:entity="entity" v-bind:attribute="column" v-bind:filters="filters" v-on:updatefilter="filters = $event"></symfonyTable-filter> {{ column | capitalize }}
+                    <th class="table-row-buttons"> </th>
+                    <th v-for="column in columnsArray" scope="col" class="table-col-title">
+                        <symfonyTable-filter v-if="column !== 'flags'"
+                            v-bind:attribute="column"
+                            v-bind:entities="entities"
+                            v-bind:entity="entity"
+                            v-bind:filters="filters"
+                            v-on:updatefilter="filters = $event"
+                            v-on:updatesort="entities = $event"
+                        >
+                        </symfonyTable-filter> {{ column | capitalize }}
                     </th>
-                    <th width="125"> </th>
                 </tr>
             </thead>
             <tbody>
-                <symfonyTable-row v-bind:columns="columns" v-bind:entity="entity" v-bind:filters="filters" v-for="entity in entities" :key="entity.id"></symfonyTable-row>
+                <symfonyTable-row v-bind:columns="columnsArray" v-bind:entity="entity" v-bind:filters="filters" v-for="entity in entities" :key="entity.id"></symfonyTable-row>
             </tbody>
         </table>
     </div>
@@ -24,13 +37,18 @@ export default {
     name: 'symfonyTable',
     data: function() {
         return {
-            entities: {},
+            entities: [],
+            entitiesOriginal: [],
             visableEntities: 0,
             filters: {},
             filtersVisable: false
         }
     },
     props: {
+        endpoint: {
+          type: String,
+          required: false
+        },
         entity: {
           required: true
         },
@@ -70,9 +88,27 @@ export default {
         }
     },
     computed: {
+        fetchUrl: function () {
+            if (typeof this.endpoint != "undefined") {
+                return this.endpoint;
+            }
+
+            return '/vue/table/' + this.entity + '/' + this.columnsArray.join('-')
+        },
         totalEntities: function () {
             return this.entities.length;
         },
+        columnsArray: function () {
+            let columns = [];
+            this.columns.forEach((column) => {
+                columns.push(column);
+            });
+
+            return columns;
+        },
+        attributeString: function () {
+            return this.columnsArray.join('-');
+        }
     },
     watch: {
         filters: function () {
@@ -80,6 +116,22 @@ export default {
         }
     },
     methods: {
+        clear() {
+            this.$nextTick(() => {
+                let _this = this;
+                requestAnimationFrame(() => {
+                    document.querySelectorAll('.btn-close-filter').forEach((filter) => {
+                        filter.click();
+                    });
+                    document.querySelectorAll('.filter-visable').forEach((filter) => {
+                        filter.click();
+                    });
+                    _this.entities = _this.entitiesOriginal;
+                    _this.filters = {};
+                })
+            });
+
+        },
         updateVisableCount() {
             let count = this.entities.length;
             if (typeof this.$refs.rows !== "undefined") {
@@ -91,14 +143,14 @@ export default {
         },
         fetchEntities() {
             let _this = this;
-
-            fetch('/vue/table/' + this.entity, {
+            fetch(this.fetchUrl, {
                 method: 'get',
                 credentials: 'same-origin',
             }).then(function(response) {
                 return response.json()
             }).then(function(json) {
                 _this.entities = json;
+                _this.entitiesOriginal = json;
             }).catch(function(ex) {
                 console.log('parsing failed', ex)
             })
