@@ -10,7 +10,7 @@
             <thead>
                 <tr>
                     <th class="table-row-buttons"> </th>
-                    <th v-for="column in columnsArray" scope="col" class="table-col-title">
+                    <th v-for="column in columnsArray" scope="col" class="table-col-title" v-bind:class="['table-col-' + column]">
                         <symfonyTable-filter v-if="column !== 'flags'"
                             v-bind:attribute="column"
                             v-bind:entities="entities"
